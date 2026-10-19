@@ -46,6 +46,8 @@ Write-Utf8NoBom -Path $main -Text $c
 
 $c = [System.IO.File]::ReadAllText($config)
 $c = $c.Replace('window_title = "MarioLuigiSuperstarSagaRecomp"','window_title = "RAG Edition: Superstar Saga"')
+$c = $c.Replace('path = "saves/mlss_usa.sav"', 'path = "saves/rag_mlss_usa.sav"')
+if (-not $c.Contains('path = "saves/rag_mlss_usa.sav"')) { throw "Could not isolate the RAG Edition cartridge save path." }
 Write-Utf8NoBom -Path $config -Text $c
 
 $c = [System.IO.File]::ReadAllText($cmake)
