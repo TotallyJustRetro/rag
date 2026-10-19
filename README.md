@@ -80,9 +80,9 @@ The `RAG Edition Native Windows Build` workflow is **manual-only** and runs on a
 2. Install the MSYS2 MinGW-w64 compiler and SDL2 development package. The default paths are `C:/msys64/mingw64` for both the toolchain and SDL2 SDK; enter different paths if your setup differs.
 3. Open **RAG → Settings → Actions → Runners → New self-hosted runner**, choose Windows x64, and follow GitHub's displayed steps. The one-time registration token is private: never paste it into chat or commit it. Run the runner as the same Windows account that can read the ROM/BIOS and build folders; leave the runner online.
 4. In **Actions**, select **RAG Edition Native Windows Build → Run workflow**, check the ROM/BIOS/toolchain paths, and start it. The workflow validates the file hashes, regenerates the native code locally, compiles the EXE, and runs a headless smoke test.
-5. After a successful run, the executable remains at `reference/mlss/build/host/RAGSuperstarSaga.exe` on that PC. No downloadable game binary is published from this public repository.
+5. After a successful run, a runnable local folder is staged at `C:/RAG-private/RAG-Edition` by default. It contains `RAGSuperstarSaga.exe`, required runtime DLLs (when dynamically linked), launcher assets, `game.toml`, notices, and a quick-start note. It deliberately does **not** contain the ROM or BIOS. You can change the destination with the workflow's `output_dir` input. The raw build remains under `reference/mlss/build/host` inside the runner workspace, but the staged folder survives the next checkout cleanup.
 
-The root Windows CI workflow still uses GitHub-hosted runners for the small diagnostic executable and tests; only the game-specific build uses the self-hosted runner.
+The root Windows CI workflow still uses GitHub-hosted runners for the diagnostic executable and tests; only the game-specific build and local package staging use the self-hosted runner. No game executable or ROM-generated source is uploaded as a public workflow artifact.
 
 ## RAG's own diagnostic utility
 
