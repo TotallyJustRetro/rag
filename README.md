@@ -29,7 +29,7 @@ RAG applies a small, reviewable local overlay on top of the pinned integration b
 
 - **RAG Edition identity:** custom launcher/window identity and a `RAGSuperstarSaga.exe` output name.
 - **Independent user data:** `rag-config.ini`, `rag-keybinds.ini`, `rag-rom.cfg`, `rag-bios.cfg`, and `saves/rag_mlss_usa.sav` keep this build from sharing configuration or progress with the upstream preview.
-- **Save safety:** before an interactive session starts, RAG writes the current cartridge save to `saves/rag_mlss_usa.sav.bak` and rotates the previous backup to `.bak.1`. This protects the last known save across many interrupted sessions; it is not a replacement for keeping external backups.
+- **Save safety:** before an interactive session starts, RAG writes the current cartridge save to `saves/rag_mlss_usa.sav.bak` and rotates the previous backup to `.bak.1`. This protects the last known save across many interrupted sessions; it is not a replacement for keeping external backups. To restore one, close RAG, make a copy of the current `.sav` elsewhere, then copy the chosen `.bak` or `.bak.1` over `saves/rag_mlss_usa.sav`.
 - **Performance visibility:** FPS readout is enabled by default.
 - **Resizable window:** the window may be resized freely while the renderer preserves the game image's aspect ratio with letterboxing/pillarboxing; this is not fake widescreen or a change to the game's 240×160 logical view.
 - **Selectable display filters:** opt-in launcher controls expose the sharp-scaling filter and affine-texture filtering, both off by default so the original pixel presentation remains the starting point.
