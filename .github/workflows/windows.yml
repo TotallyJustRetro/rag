@@ -107,6 +107,7 @@ jobs:
           & '.\tools\apply-rag-variant.ps1' -IntegrationPath $integration
 
           $main = Get-Content (Join-Path $integration 'src/main.cpp') -Raw
+          $saveBackupHeader = Get-Content (Join-Path $integration 'src/rag_save_backup.hpp') -Raw
           $config = Get-Content (Join-Path $integration 'game.toml') -Raw
           $cmake = Get-Content (Join-Path $integration 'CMakeLists.txt') -Raw
           $buildScript = Get-Content (Join-Path $integration 'tools/build-host.ps1') -Raw
@@ -129,10 +130,13 @@ jobs:
             'expose_assist_tools = true',
             'rewind_history_seconds = 5',
             'RAG save safety',
-            '.bak.1',
+            'rag::rotate_save_backups',
             'Save backup written'
           )) {
             if (-not $main.Contains($marker)) { throw "RAG source overlay missing marker: $marker" }
+          }
+          foreach ($marker in @('rag::rotate_save_backups', '.bak.1', 'The current save is never moved or modified')) {
+            if (-not $saveBackupHeader.Contains($marker)) { throw "RAG save-backup helper missing marker: $marker" }
           }
           if (-not $config.Contains('window_title = "RAG Edition: Superstar Saga"')) { throw 'RAG window title not applied.' }
           if (-not $config.Contains('path = "saves/rag_mlss_usa.sav"')) { throw 'RAG save path not isolated.' }
