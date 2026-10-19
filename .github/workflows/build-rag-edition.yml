@@ -107,11 +107,12 @@ jobs:
           $output = [System.IO.Path]::GetFullPath($env:RAG_OUTPUT_DIR)
           $workspace = [System.IO.Path]::GetFullPath($PWD.Path)
           $separator = [string][System.IO.Path]::DirectorySeparatorChar
+          $trimChars = [char[]]@([char]92, [char]47)
           if ($output.Equals([System.IO.Path]::GetPathRoot($output), [System.StringComparison]::OrdinalIgnoreCase)) {
             throw 'A drive root cannot be used as the package output directory.'
           }
-          $outputPrefix = $output.TrimEnd('\','/') + $separator
-          $workspacePrefix = $workspace.TrimEnd('\','/') + $separator
+          $outputPrefix = $output.TrimEnd($trimChars) + $separator
+          $workspacePrefix = $workspace.TrimEnd($trimChars) + $separator
           if ($output.Equals($workspace, [System.StringComparison]::OrdinalIgnoreCase) -or
               $output.StartsWith($workspacePrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
               $workspace.StartsWith($outputPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
