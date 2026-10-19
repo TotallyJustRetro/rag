@@ -15,7 +15,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Validate PowerShell build script syntax
         shell: pwsh
         run: |
@@ -53,7 +53,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Check out repository and pinned submodules
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
       - name: Verify the pinned Superstar Saga integration
@@ -139,3 +139,56 @@ jobs:
             if ($count -ne 1) { throw "Overlay idempotency failed for $($marker.Label) (expected one marker, found $count)." }
           }
           Write-Host 'PASS: RAG Edition source overlay, isolated save, target name, and re-application contract.'
+
+  runtime-overlay-compile:
+    name: Compile RAG's patched runtime
+    runs-on: windows-latest
+    needs: integration-contract
+    timeout-minutes: 60
+    steps:
+      - name: Check out source and pinned submodules
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Set up the pinned toolchain family and SDL2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          location: C:\\msys64
+          suppress-deprecation-warnings: msystem-mingw64
+          update: true
+          install: >-
+            git
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-SDL2
+
+      - name: Initialize the upstream's pinned build dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & '.\\reference\\mlss\\tools\\setup-deps.ps1'
+          if ($LASTEXITCODE -ne 0) { throw "Dependency setup failed with exit code $LASTEXITCODE." }
+
+      - name: Apply the RAG Edition overlay
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & '.\\tools\\apply-rag-variant.ps1' -IntegrationPath (Join-Path $PWD 'reference/mlss')
+
+      - name: Configure and build the recompiler generator
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & '.\\reference\\mlss\\tools\\build-host.ps1' -Jobs 4 -Toolchain 'C:/msys64/mingw64' -SdlRoot 'C:/msys64/mingw64' -GeneratorOnly
+          if ($LASTEXITCODE -ne 0) { throw "Generator build failed with exit code $LASTEXITCODE." }
+
+      - name: Compile the patched runtime library
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & 'C:/msys64/mingw64/bin/cmake.exe' --build 'reference/mlss/build/host' --target gbarecomp_runtime --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw "Patched runtime compilation failed with exit code $LASTEXITCODE." }
+          Write-Host 'PASS: patched host_window and runtime sources compile with MinGW/SDL2.'
