@@ -1,0 +1,105 @@
+name: RAG Edition Native Windows Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      rom_path:
+        description: Absolute path to your local USA Rev 0 ROM on the self-hosted Windows runner
+        required: true
+        default: 'C:\\RAG-private\\Mario & Luigi - Superstar Saga (USA).gba'
+        type: string
+      bios_path:
+        description: Absolute path to your local retail GBA BIOS on the runner
+        required: true
+        default: 'C:\\RAG-private\\gba_bios.bin'
+        type: string
+      toolchain_root:
+        description: MSYS2 MinGW-w64 root containing bin/g++.exe
+        required: true
+        default: 'C:\\msys64\\mingw64'
+        type: string
+      sdl_root:
+        description: SDL2 MinGW SDK root containing include/SDL2/SDL.h and lib/libSDL2.dll.a
+        required: true
+        default: 'C:\\msys64\\mingw64'
+        type: string
+      jobs:
+        description: Parallel build jobs
+        required: true
+        default: 4
+        type: number
+
+permissions:
+  contents: read
+
+# Deliberately manual-only. This uses local ROM/BIOS files on the runner and
+# never uploads the game executable or ROM-derived generated source as an artifact.
+jobs:
+  build:
+    name: Build RAG Edition on the owner's Windows machine
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 240
+    steps:
+      - name: Check out RAG and pinned submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Verify local build prerequisites and input files
+        shell: pwsh
+        env:
+          RAG_ROM_PATH: ${{ inputs.rom_path }}
+          RAG_BIOS_PATH: ${{ inputs.bios_path }}
+          RAG_TOOLCHAIN_ROOT: ${{ inputs.toolchain_root }}
+          RAG_SDL_ROOT: ${{ inputs.sdl_root }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($path in @($env:RAG_ROM_PATH, $env:RAG_BIOS_PATH)) {
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+              throw "Required local file is not visible to this runner: $path"
+            }
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_TOOLCHAIN_ROOT 'bin/g++.exe'))) {
+            throw "MinGW-w64 compiler not found below $env:RAG_TOOLCHAIN_ROOT"
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_SDL_ROOT 'include/SDL2/SDL.h'))) {
+            throw "SDL2 development headers not found below $env:RAG_SDL_ROOT"
+          }
+          Write-Host 'ROM and BIOS are local runner inputs; neither is uploaded to GitHub.'
+
+      - name: Generate and compile the RAG Edition executable
+        shell: pwsh
+        env:
+          RAG_ROM_PATH: ${{ inputs.rom_path }}
+          RAG_BIOS_PATH: ${{ inputs.bios_path }}
+          RAG_TOOLCHAIN_ROOT: ${{ inputs.toolchain_root }}
+          RAG_SDL_ROOT: ${{ inputs.sdl_root }}
+          RAG_JOBS: ${{ inputs.jobs }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & '.\\tools\\build-mlss.ps1' -Rom $env:RAG_ROM_PATH -Bios $env:RAG_BIOS_PATH -Toolchain $env:RAG_TOOLCHAIN_ROOT -SdlRoot $env:RAG_SDL_ROOT -Jobs ([int]$env:RAG_JOBS)
+          if ($LASTEXITCODE -ne 0) { throw "RAG Edition build wrapper failed with exit code $LASTEXITCODE." }
+
+      - name: Smoke-test the executable
+        shell: pwsh
+        env:
+          RAG_ROM_PATH: ${{ inputs.rom_path }}
+          RAG_BIOS_PATH: ${{ inputs.bios_path }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $integration = Join-Path $PWD 'reference/mlss'
+          $localRom = Join-Path $integration 'Mario Luigi - Superstar Saga (USA).gba'
+          $exe = Join-Path $integration 'build/host/RAGSuperstarSaga.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+            throw "Expected RAG executable was not produced: $exe"
+          }
+          Push-Location $integration
+          try {
+            & $exe --rom $localRom --bios $env:RAG_BIOS_PATH --save 'saves/rag_mlss_usa.sav' --frames 600 --no-window
+            if ($LASTEXITCODE -ne 0) { throw "Headless smoke test failed with exit code $LASTEXITCODE." }
+          } finally {
+            Pop-Location
+          }
+          Write-Host "PASS: native executable built and completed a 600-frame headless smoke test."
+          Write-Host "Executable is on this runner at: $exe"
