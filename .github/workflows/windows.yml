@@ -89,6 +89,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $integration = Join-Path $PWD 'reference/mlss'
           & '.\tools\apply-rag-variant.ps1' -IntegrationPath $integration
+          # The overlay is expected to be safe to re-apply when a local build is resumed.
+          & '.\tools\apply-rag-variant.ps1' -IntegrationPath $integration
 
           $main = Get-Content (Join-Path $integration 'src/main.cpp') -Raw
           $config = Get-Content (Join-Path $integration 'game.toml') -Raw
@@ -110,4 +112,13 @@ jobs:
           if (-not $config.Contains('path = "saves/rag_mlss_usa.sav"')) { throw 'RAG save path not isolated.' }
           if (-not $cmake.Contains('OUTPUT_NAME "RAGSuperstarSaga"')) { throw 'RAG executable output name not applied.' }
           if (-not $buildScript.Contains('RAGSuperstarSaga.exe')) { throw 'Build script does not check the RAG executable name.' }
-          Write-Host 'PASS: RAG Edition source overlay and target-name contract.'
+          foreach ($pair in @(
+            @{ Text = 'options.builtin_game_name = "RAG Edition: Superstar Saga";'; Count = 1 },
+            @{ Text = 'options.launcher_save_path = "saves/rag_mlss_usa.sav";'; Count = 1 },
+            @{ Text = 'set_target_properties(MarioLuigiSuperstarSagaRecomp PROPERTIES OUTPUT_NAME "RAGSuperstarSaga")'; Count = 1 },
+            @{ Text = 'path = "saves/rag_mlss_usa.sav"'; Count = 1 }
+          )) {
+            $matches = [regex]::Matches($main + $cmake + $config, [regex]::Escape($pair.Text)).Count
+            if ($matches -ne $pair.Count) { throw "Overlay idempotency failed for marker '$($pair.Text)' (found $matches)." }
+          }
+          Write-Host 'PASS: RAG Edition source overlay, isolated save, target name, and re-application contract.'
