@@ -31,6 +31,16 @@ function Replace-ExpectedText {
             Write-Host "Already applied: $Description"
             return
         }
+        # Multiline replacement strings can be normalized by editors/checkout
+        # tooling; use their final non-empty line as an idempotency sentinel too.
+        $sentinel = @($NewText -split "`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Last 1).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($sentinel)) {
+            $sentinelCount = [regex]::Matches($content, [regex]::Escape($sentinel)).Count
+            if ($sentinelCount -ge $ExpectedCount) {
+                Write-Host "Already applied: $Description"
+                return
+            }
+        }
         throw "Expected source anchor for '$Description' not found in $Path."
     }
     if ($oldCount -ne $ExpectedCount) {
