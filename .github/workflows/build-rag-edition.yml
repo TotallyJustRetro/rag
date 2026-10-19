@@ -98,21 +98,44 @@ jobs:
         shell: pwsh
         env:
           RAG_OUTPUT_DIR: ${{ inputs.output_dir }}
+          RAG_ROM_PATH: ${{ inputs.rom_path }}
+          RAG_BIOS_PATH: ${{ inputs.bios_path }}
         run: |
           $ErrorActionPreference = 'Stop'
           $integration = Join-Path $PWD 'reference/mlss'
           $buildDir = Join-Path $integration 'build/host'
           $output = [System.IO.Path]::GetFullPath($env:RAG_OUTPUT_DIR)
           $workspace = [System.IO.Path]::GetFullPath($PWD.Path)
-          if ($output.StartsWith($workspace, [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw 'Choose an output folder outside the Git checkout so it survives future clean builds.'
+          $separator = [string][System.IO.Path]::DirectorySeparatorChar
+          if ($output.Equals([System.IO.Path]::GetPathRoot($output), [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw 'A drive root cannot be used as the package output directory.'
+          }
+          $outputPrefix = $output.TrimEnd('\','/') + $separator
+          $workspacePrefix = $workspace.TrimEnd('\','/') + $separator
+          if ($output.Equals($workspace, [System.StringComparison]::OrdinalIgnoreCase) -or
+              $output.StartsWith($workspacePrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
+              $workspace.StartsWith($outputPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Choose an output folder outside the Git checkout and not one of its parent folders.'
+          }
+          foreach ($inputFile in @($env:RAG_ROM_PATH, $env:RAG_BIOS_PATH)) {
+            $inputFull = [System.IO.Path]::GetFullPath($inputFile)
+            if ($inputFull.StartsWith($outputPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+              throw "The package output directory would contain a ROM/BIOS input: $inputFull"
+            }
           }
           $exe = Join-Path $buildDir 'RAGSuperstarSaga.exe'
           if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
             throw "Expected RAG executable was not produced: $exe"
           }
-          if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output -Recurse -Force }
+          $marker = Join-Path $output '.rag-package-managed'
+          if (Test-Path -LiteralPath $output) {
+            if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) {
+              throw "Refusing to delete an existing unmarked folder. Choose a new output directory or add the RAG marker only to a directory you dedicate to this build: $output"
+            }
+            Remove-Item -LiteralPath $output -Recurse -Force
+          }
           New-Item -ItemType Directory -Force -Path $output | Out-Null
+          Set-Content -LiteralPath (Join-Path $output '.rag-package-managed') -Value 'Managed by the RAG Edition build workflow.' -Encoding utf8
           Copy-Item -LiteralPath $exe -Destination $output
           foreach ($binary in @('SDL2.dll','libgcc_s_seh-1.dll','libstdc++-6.dll','libwinpthread-1.dll')) {
             $source = Join-Path $buildDir $binary
