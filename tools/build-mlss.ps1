@@ -142,6 +142,18 @@ try {
         throw "Expected one gba_recompile.exe under build\host; found $($generators.Count). Inspect logs\host-build.log."
     }
 
+    $FrameworkBiosConfig = Join-Path $Integration "gbarecomp/bios/gba_bios.toml"
+    $ExpectedBiosConfig = Join-Path $Integration "reference/gbarecomp/bios/gba_bios.toml"
+    if ((Test-Path -LiteralPath $FrameworkBiosConfig) -and -not (Test-Path -LiteralPath $ExpectedBiosConfig)) {
+        # Compatibility shim for this pinned integration revision: regen.ps1
+        # still looks under reference/gbarecomp, while setup-deps.ps1 checks out
+        # the framework under gbarecomp/. This ignored copy supplies only config
+        # metadata; the authoritative framework remains the pinned submodule.
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ExpectedBiosConfig) | Out-Null
+        Copy-Item -LiteralPath $FrameworkBiosConfig -Destination $ExpectedBiosConfig
+        Write-Host "Prepared the ignored BIOS-config compatibility path for regen.ps1."
+    }
+
     Invoke-Checked -Description "Generate native cartridge and BIOS C++ from verified local files" -Action {
         & ".\tools\regen.ps1" -Bios $Bios -Generator $generators[0].FullName
     }
