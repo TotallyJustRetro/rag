@@ -1,0 +1,13 @@
+/build/
+/out/
+/.vs/
+/.vscode/
+CMakeUserPresets.json
+*.user
+*.suo
+*.gba
+*.gbc
+*.gb
+*.sav
+*.srm
+*.bios
