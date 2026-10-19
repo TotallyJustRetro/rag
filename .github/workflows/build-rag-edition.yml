@@ -37,7 +37,7 @@ permissions:
 jobs:
   build:
     name: Build RAG Edition on the owner's Windows machine
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, windows, x64]
     timeout-minutes: 240
     steps:
       - name: Check out RAG and pinned submodules
