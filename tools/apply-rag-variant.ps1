@@ -116,6 +116,62 @@ if (-not $c.Contains('options.builtin_game_name = "RAG Edition: Superstar Saga";
 }
 Write-Utf8NoBom -Path $main -Text $c
 
+$backupOld = @'
+    if (game_validate_inputs(args, options)) return 1;
+    if (player_launch) {
+        args.emplace_back("--save");
+'@
+$backupNew = @'
+    if (game_validate_inputs(args, options)) return 1;
+
+    // RAG save safety: preserve the last session's cartridge save before
+    // starting a new interactive session. Keep two generations outside the
+    // game runtime so an interrupted write can be recovered manually.
+    if (player_launch && options.launcher_save_path &&
+        options.launcher_save_path[0]) {
+        std::filesystem::path save_path(options.launcher_save_path);
+        if (save_path.is_relative())
+            save_path = std::filesystem::current_path() / save_path;
+        std::error_code save_error;
+        if (!save_path.parent_path().empty())
+            std::filesystem::create_directories(save_path.parent_path(), save_error);
+        if (save_error) {
+            std::fprintf(stderr, "[RAG] Save backup warning: %s\\n",
+                         save_error.message().c_str());
+        } else if (std::filesystem::is_regular_file(save_path, save_error) &&
+                   !save_error) {
+            std::filesystem::path backup = save_path;
+            backup += ".bak";
+            std::filesystem::path previous_backup = save_path;
+            previous_backup += ".bak.1";
+            save_error.clear();
+            if (std::filesystem::exists(backup, save_error) && !save_error) {
+                std::filesystem::copy_file(
+                    backup, previous_backup,
+                    std::filesystem::copy_options::overwrite_existing,
+                    save_error);
+            }
+            if (!save_error) {
+                std::filesystem::copy_file(
+                    save_path, backup,
+                    std::filesystem::copy_options::overwrite_existing,
+                    save_error);
+            }
+            if (save_error) {
+                std::fprintf(stderr, "[RAG] Save backup warning: %s\\n",
+                             save_error.message().c_str());
+            } else {
+                std::fprintf(stderr, "[RAG] Previous save copied to %s\\n",
+                             backup.string().c_str());
+            }
+        }
+    }
+
+    if (player_launch) {
+        args.emplace_back("--save");
+'@
+Replace-ExpectedText -Path $main -OldText $backupOld -NewText $backupNew -Description "two-generation automatic cartridge-save backup"
+
 $c = [System.IO.File]::ReadAllText($config)
 $c = $c.Replace('window_title = "MarioLuigiSuperstarSagaRecomp"','window_title = "RAG Edition: Superstar Saga"')
 $c = $c.Replace('path = "saves/mlss_usa.sav"', 'path = "saves/rag_mlss_usa.sav"')
