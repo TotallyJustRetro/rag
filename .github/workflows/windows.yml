@@ -42,7 +42,7 @@ jobs:
       - name: Upload initial Windows tools
         uses: actions/upload-artifact@v4
         with:
-          name: rag-windows-x64
+          name: rag-diagnostics-windows-x64
           path: |
             build/Release/rag.exe
             build/Release/rag_tests.exe
