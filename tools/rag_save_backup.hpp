@@ -36,13 +36,19 @@ inline SaveBackupResult rotate_save_backups(const std::filesystem::path& save_pa
         }
     }
 
-    const bool has_save = std::filesystem::is_regular_file(save_path, ec);
+    const auto save_status = std::filesystem::status(save_path, ec);
+    if (ec == std::errc::no_such_file_or_directory ||
+        ec == std::errc::not_a_directory) {
+        // First-launch path: a missing save is expected, not a failure.
+        ec.clear();
+        return result;
+    }
     if (ec) {
         result.ok = false;
         result.error = ec.message();
         return result;
     }
-    if (!has_save) {
+    if (!std::filesystem::is_regular_file(save_status)) {
         return result;
     }
     result.save_found = true;
