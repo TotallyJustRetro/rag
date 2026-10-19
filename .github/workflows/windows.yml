@@ -96,6 +96,10 @@ jobs:
           $config = Get-Content (Join-Path $integration 'game.toml') -Raw
           $cmake = Get-Content (Join-Path $integration 'CMakeLists.txt') -Raw
           $buildScript = Get-Content (Join-Path $integration 'tools/build-host.ps1') -Raw
+          $launcherBoot = Get-Content (Join-Path $integration 'src/game_launcher_boot.cpp') -Raw
+          $runtimeHeader = Get-Content (Join-Path $integration 'gbarecomp/src/runtime/host_window.h') -Raw
+          $runtimeWindow = Get-Content (Join-Path $integration 'gbarecomp/src/runtime/host_window.cpp') -Raw
+          $runtimeCore = Get-Content (Join-Path $integration 'gbarecomp/src/runtime/runtime.cpp') -Raw
 
           foreach ($marker in @(
             'RAG Edition: Superstar Saga',
@@ -113,6 +117,17 @@ jobs:
           if (-not $config.Contains('path = "saves/rag_mlss_usa.sav"')) { throw 'RAG save path not isolated.' }
           if (-not $cmake.Contains('OUTPUT_NAME "RAGSuperstarSaga"')) { throw 'RAG executable output name not applied.' }
           if (-not $buildScript.Contains('RAGSuperstarSaga.exe')) { throw 'Build script does not check the RAG executable name.' }
+          foreach ($marker in @(
+            @{ Source = $launcherBoot; Text = '"rag-rom.cfg"'; Label = 'RAG ROM cache filename' },
+            @{ Source = $launcherBoot; Text = '"rag-bios.cfg"'; Label = 'RAG BIOS cache filename' },
+            @{ Source = $runtimeHeader; Text = 'const char* keybinds_filename = nullptr'; Label = 'runtime filename API' },
+            @{ Source = $runtimeCore; Text = 'opts.launcher_config_filename'; Label = 'runtime config wiring' },
+            @{ Source = $runtimeCore; Text = 'opts.launcher_keybinds_filename'; Label = 'runtime keybind wiring' },
+            @{ Source = $runtimeWindow; Text = 'b->input_config_filename'; Label = 'variant runtime config use' },
+            @{ Source = $runtimeWindow; Text = 'keybinds_name'; Label = 'variant keybinding use' }
+          )) {
+            if (-not $marker.Source.Contains($marker.Text)) { throw "RAG runtime isolation missing: $($marker.Label)" }
+          }
           $uniqueMarkers = @(
             @{ Source = $main; Text = 'options.builtin_game_name = "RAG Edition: Superstar Saga";'; Label = 'launcher identity' },
             @{ Source = $main; Text = 'options.launcher_save_path = "saves/rag_mlss_usa.sav";'; Label = 'launcher save path' },
