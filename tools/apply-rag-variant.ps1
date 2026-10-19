@@ -133,10 +133,10 @@ $backupNew = @'
             save_path = std::filesystem::current_path() / save_path;
         const auto backup_result = rag::rotate_save_backups(save_path);
         if (!backup_result.ok) {
-            std::fprintf(stderr, "[RAG] Save backup warning: %s\\n",
+            std::fprintf(stderr, "[RAG] Save backup warning: %s\n",
                          backup_result.error.c_str());
         } else if (backup_result.save_found) {
-            std::fprintf(stderr, "[RAG] Save backup written to %s\\n",
+            std::fprintf(stderr, "[RAG] Save backup written to %s\n",
                          backup_result.backup_path.string().c_str());
         }
     }
