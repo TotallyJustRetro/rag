@@ -41,7 +41,7 @@ The publisher lists this ZIP's SHA-256 as `729cf47d2f53ab6d5b7bb937bab166fc4c250
 
 ## Build the game integration (Windows)
 
-Prerequisites include Windows 10/11 x64, Git, PowerShell, Visual Studio 2022, MSYS2 MinGW-w64 with GCC/G++, CMake, Ninja, and SDL2 development libraries.
+Prerequisites for the game build are Windows 10/11 x64, Git, PowerShell, MSYS2 MinGW-w64 with GCC/G++, CMake, Ninja, and SDL2 development libraries. Visual Studio 2022 with the C++ workload is only needed for the optional root diagnostic-tool build.
 
 1. Clone this repository with submodules:
    ~~~powershell
