@@ -139,7 +139,7 @@ jobs:
           )) {
             if (-not $main.Contains($marker)) { throw "RAG source overlay missing marker: $marker" }
           }
-          foreach ($marker in @('rag::rotate_save_backups', '.bak.1', 'The current save is never moved or modified')) {
+          foreach ($marker in @('rotate_save_backups', '.bak.1', 'The current save is never moved or modified')) {
             if (-not $saveBackupHeader.Contains($marker)) { throw "RAG save-backup helper missing marker: $marker" }
           }
           if (-not $config.Contains('window_title = "RAG Edition: Superstar Saga"')) { throw 'RAG window title not applied.' }
