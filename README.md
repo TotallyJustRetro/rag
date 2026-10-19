@@ -10,6 +10,19 @@ Rather than inventing an ARM7TDMI recompiler and GBA hardware runtime from scrat
 
 The baseline is explicitly experimental. Its upstream README reports the title/file-select flow and opening sequences through the Bowser tutorial battle as tested; it does **not** claim full-campaign compatibility.
 
+## Feature baseline at the pinned revision
+
+| Feature | Starting capability | RAG work remaining |
+|---|---|---|
+| Native translation | GBARecomp AOT translates ARM/Thumb code to C++; interpreter fallback remains for unresolved paths. | Expand coverage and test additional scenes. |
+| Keyboard / controller | The launcher exposes keyboard and gamepad bindings via SDL2. | Verify mappings throughout the full game. |
+| Saves | The game configuration selects 8 KiB EEPROM persistence. | Continue save/load round-trip testing in-game. |
+| Fullscreen / display | The launcher supports borderless fullscreen and integer scaling; original 240×160 / 3:2 display remains the default. | Add any extra resolution controls without distorting pixels or game timing. |
+| Adaptive widescreen | **Not enabled** in this title's current integration; its launch options leave adaptive view disabled. | First trace the field/camera bounds, background streaming, sprite clipping, and HUD positions; only enable wider views after scene-by-scene checks. |
+| Frame pacing | The preview notes possible micro-stutters when native code paths are first visited. | Profile representative play and reduce stalls without changing game timing. |
+
+These are the capabilities of the pinned preview—not claims that RAG has already completed full-game testing. Generated game code and final gameplay tests still need to be built locally with the matching ROM and retail BIOS.
+
 ## Get the code
 
 ~~~powershell
