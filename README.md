@@ -33,6 +33,12 @@ git submodule update --init --recursive
 
 Keep your legally obtained ROM and retail GBA BIOS on your own computer. Do not add either to Git. The baseline requires the matching USA ROM revision and a retail BIOS; the BIOS is not included.
 
+## Optional: test the existing preview binary
+
+A prebuilt Windows x64 executable is available from the upstream integration's [v0.1.1-preview release](https://github.com/Zaxaerith/MarioLuigiSuperstarSagaRecomp/releases/tag/v0.1.1-preview). This is **the upstream project's binary, not an executable produced by RAG's CI**. It still requires your matching USA Rev 0 ROM and a user-supplied retail GBA BIOS, and the reported play-tested scope covers the opening through the Bowser tutorial—not the full campaign.
+
+The publisher lists this ZIP's SHA-256 as `729cf47d2f53ab6d5b7bb937bab166fc4c2503c82fd4a803b89d56b4013202d9`. Verify the downloaded file against the release page before using it.
+
 ## Build the game integration (Windows)
 
 Prerequisites include Windows 10/11 x64, Git, PowerShell, Visual Studio 2022, MSYS2 MinGW-w64 with GCC/G++, CMake, Ninja, and SDL2 development libraries.
