@@ -82,3 +82,31 @@ jobs:
             }
           }
           Write-Host 'PASS: pinned integration, engine, launcher, ROM identity and save config.'
+
+      - name: Apply and validate RAG Edition overlays
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $integration = Join-Path $PWD 'reference/mlss'
+          & '.\tools\apply-rag-variant.ps1' -IntegrationPath $integration
+
+          $main = Get-Content (Join-Path $integration 'src/main.cpp') -Raw
+          $config = Get-Content (Join-Path $integration 'game.toml') -Raw
+          $cmake = Get-Content (Join-Path $integration 'CMakeLists.txt') -Raw
+          $buildScript = Get-Content (Join-Path $integration 'tools/build-host.ps1') -Raw
+
+          foreach ($marker in @(
+            'RAG Edition: Superstar Saga',
+            'rag-config.ini',
+            'rag-keybinds.ini',
+            'saves/rag_mlss_usa.sav',
+            'show_fps_by_default = true',
+            'expose_assist_tools = true',
+            'rewind_history_seconds = 5'
+          )) {
+            if (-not $main.Contains($marker)) { throw "RAG source overlay missing marker: $marker" }
+          }
+          if (-not $config.Contains('window_title = "RAG Edition: Superstar Saga"')) { throw 'RAG window title not applied.' }
+          if (-not $cmake.Contains('OUTPUT_NAME "RAGSuperstarSaga"')) { throw 'RAG executable output name not applied.' }
+          if (-not $buildScript.Contains('RAGSuperstarSaga.exe')) { throw 'Build script does not check the RAG executable name.' }
+          Write-Host 'PASS: RAG Edition source overlay and target-name contract.'
