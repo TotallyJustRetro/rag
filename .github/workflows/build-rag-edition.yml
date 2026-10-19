@@ -154,7 +154,18 @@ jobs:
           } else {
             throw "Launcher assets are missing from the build output: $assets"
           }
-          Copy-Item -LiteralPath (Join-Path $integration 'game.toml') -Destination $output
+          $gameConfigPath = Join-Path $integration 'game.toml'
+          $gameConfig = [System.IO.File]::ReadAllText($gameConfigPath)
+          $romPathRegex = [regex]::new('(?m)(^\[rom\]\r?\n)path\s*=\s*"[^"]*"')
+          if (-not $romPathRegex.IsMatch($gameConfig)) {
+            throw 'Could not locate the [rom].path field to prepare a portable first-run config.'
+          }
+          $gameConfig = $romPathRegex.Replace($gameConfig, '$1path = ""', 1)
+          [System.IO.File]::WriteAllText(
+            (Join-Path $output 'game.toml'),
+            $gameConfig,
+            [System.Text.UTF8Encoding]::new($false)
+          )
           foreach ($notice in @('LICENSE','THIRD_PARTY_NOTICES.md')) {
             $source = Join-Path $integration $notice
             if (Test-Path -LiteralPath $source -PathType Leaf) {
