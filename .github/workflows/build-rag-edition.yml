@@ -6,22 +6,22 @@ on:
       rom_path:
         description: Absolute path to your local USA Rev 0 ROM on the self-hosted Windows runner
         required: true
-        default: 'C:\\RAG-private\\Mario & Luigi - Superstar Saga (USA).gba'
+        default: 'C:/RAG-private/Mario & Luigi - Superstar Saga (USA).gba'
         type: string
       bios_path:
         description: Absolute path to your local retail GBA BIOS on the runner
         required: true
-        default: 'C:\\RAG-private\\gba_bios.bin'
+        default: 'C:/RAG-private/gba_bios.bin'
         type: string
       toolchain_root:
         description: MSYS2 MinGW-w64 root containing bin/g++.exe
         required: true
-        default: 'C:\\msys64\\mingw64'
+        default: 'C:/msys64/mingw64'
         type: string
       sdl_root:
         description: SDL2 MinGW SDK root containing include/SDL2/SDL.h and lib/libSDL2.dll.a
         required: true
-        default: 'C:\\msys64\\mingw64'
+        default: 'C:/msys64/mingw64'
         type: string
       jobs:
         description: Parallel build jobs
