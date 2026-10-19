@@ -208,3 +208,25 @@ jobs:
           & (Join-Path $env:RAG_TOOLCHAIN_ROOT 'bin/cmake.exe') --build 'reference/mlss/build/host' --target gbarecomp_runtime --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Patched runtime compilation failed with exit code $LASTEXITCODE." }
           Write-Host 'PASS: patched host_window and runtime sources compile with MinGW/SDL2.'
+
+      - name: Compile modified game entry and launcher seam
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $gxx = Join-Path $env:RAG_TOOLCHAIN_ROOT 'bin/g++.exe'
+          $includeArgs = @(
+            '-std=c++20',
+            '-DRECOMP_LAUNCHER',
+            '-fsyntax-only',
+            '-Ireference/mlss/gbarecomp/src/runtime',
+            '-Ireference/mlss/gbarecomp/src/gba',
+            '-Ireference/mlss/gbarecomp/src/armv4t',
+            '-Ireference/mlss/recomp-ui/src',
+            '-Ireference/mlss/recomp-ui/src/common',
+            '-Ireference/mlss/recomp-ui/src/third_party/imgui'
+          )
+          & $gxx @includeArgs 'reference/mlss/src/main.cpp'
+          if ($LASTEXITCODE -ne 0) { throw "Patched main.cpp syntax check failed with exit code $LASTEXITCODE." }
+          & $gxx @includeArgs 'reference/mlss/src/game_launcher_boot.cpp'
+          if ($LASTEXITCODE -ne 0) { throw "Patched game_launcher_boot.cpp syntax check failed with exit code $LASTEXITCODE." }
+          Write-Host 'PASS: RAG main.cpp and game launcher/ROM-BIOS validation compile independently of ROM-generated shards.'
