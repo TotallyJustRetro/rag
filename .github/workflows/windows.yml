@@ -83,6 +83,20 @@ jobs:
           }
           Write-Host 'PASS: pinned integration, engine, launcher, ROM identity and save config.'
 
+      - name: Set up Python for workflow validation
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate the manual Windows build workflow
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -m pip install --disable-pip-version-check --quiet PyYAML
+          if ($LASTEXITCODE -ne 0) { throw "PyYAML install failed with exit code $LASTEXITCODE." }
+          python tools/validate-build-workflow.py
+          if ($LASTEXITCODE -ne 0) { throw "Manual build workflow validation failed with exit code $LASTEXITCODE." }
+
       - name: Apply and validate RAG Edition overlays
         shell: pwsh
         run: |
