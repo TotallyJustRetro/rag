@@ -136,7 +136,7 @@ $backupNew = @'
         if (!save_path.parent_path().empty())
             std::filesystem::create_directories(save_path.parent_path(), save_error);
         if (save_error) {
-            std::fprintf(stderr, "[RAG] Save backup warning: %s\\n",
+            std::fprintf(stderr, "[RAG] Save backup warning: %s\n",
                          save_error.message().c_str());
         } else if (std::filesystem::is_regular_file(save_path, save_error) &&
                    !save_error) {
@@ -158,10 +158,10 @@ $backupNew = @'
                     save_error);
             }
             if (save_error) {
-                std::fprintf(stderr, "[RAG] Save backup warning: %s\\n",
+                std::fprintf(stderr, "[RAG] Save backup warning: %s\n",
                              save_error.message().c_str());
             } else {
-                std::fprintf(stderr, "[RAG] Previous save copied to %s\\n",
+                std::fprintf(stderr, "[RAG] Save backup written to %s\n",
                              backup.string().c_str());
             }
         }
