@@ -123,6 +123,8 @@ if ($existingRoms.Count -eq 1) {
     Write-Host "Placed the verified ROM in the local, gitignored integration folder."
 }
 
+& (Join-Path $PSScriptRoot "apply-rag-variant.ps1") -IntegrationPath $Integration
+
 Push-Location $Integration
 try {
     Invoke-Checked -Description "Initialize pinned GBARecomp dependencies" -Action {
@@ -162,7 +164,7 @@ try {
         & ".\tools\build-host.ps1" -Jobs $Jobs -Toolchain $Toolchain -SdlRoot $SdlRoot
     }
 
-    $Executable = Join-Path $Integration "build/host/MarioLuigiSuperstarSagaRecomp.exe"
+    $Executable = Join-Path $Integration "build/host/RAGSuperstarSaga.exe"
     if (-not (Test-Path -LiteralPath $Executable -PathType Leaf)) {
         throw "Build command completed but executable was not found at $Executable."
     }
