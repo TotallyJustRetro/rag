@@ -107,6 +107,7 @@ jobs:
             if (-not $main.Contains($marker)) { throw "RAG source overlay missing marker: $marker" }
           }
           if (-not $config.Contains('window_title = "RAG Edition: Superstar Saga"')) { throw 'RAG window title not applied.' }
+          if (-not $config.Contains('path = "saves/rag_mlss_usa.sav"')) { throw 'RAG save path not isolated.' }
           if (-not $cmake.Contains('OUTPUT_NAME "RAGSuperstarSaga"')) { throw 'RAG executable output name not applied.' }
           if (-not $buildScript.Contains('RAGSuperstarSaga.exe')) { throw 'Build script does not check the RAG executable name.' }
           Write-Host 'PASS: RAG Edition source overlay and target-name contract.'
