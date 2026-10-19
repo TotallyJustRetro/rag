@@ -1,0 +1,3 @@
+[submodule "mlss-reference"]
+	path = reference/mlss
+	url = https://github.com/Zaxaerith/MarioLuigiSuperstarSagaRecomp.git
