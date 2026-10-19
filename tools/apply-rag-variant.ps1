@@ -33,7 +33,9 @@ function Replace-ExpectedText {
         }
         # Multiline replacement strings can be normalized by editors/checkout
         # tooling; use their final non-empty line as an idempotency sentinel too.
-        $sentinel = @($NewText -split "`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Last 1).Trim()
+        $sentinelLines = @($NewText -split "`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $sentinel = ""
+        if ($sentinelLines.Count -gt 0) { $sentinel = $sentinelLines[-1].Trim() }
         if (-not [string]::IsNullOrWhiteSpace($sentinel)) {
             $sentinelCount = [regex]::Matches($content, [regex]::Escape($sentinel)).Count
             if ($sentinelCount -ge $ExpectedCount) {
