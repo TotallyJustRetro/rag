@@ -52,6 +52,13 @@ foreach ($p in @($main,$config,$cmake,$build)) {
     if (-not (Test-Path -LiteralPath $p -PathType Leaf)) { throw "Missing RAG patch target: $p" }
 }
 
+$backupHeaderSource = Join-Path (Split-Path -Parent $PSScriptRoot) "tools/rag_save_backup.hpp"
+$backupHeaderTarget = Join-Path $IntegrationPath "src/rag_save_backup.hpp"
+if (-not (Test-Path -LiteralPath $backupHeaderSource -PathType Leaf)) {
+    throw "RAG save-backup helper is missing: $backupHeaderSource"
+}
+Copy-Item -LiteralPath $backupHeaderSource -Destination $backupHeaderTarget -Force
+
 $c = [System.IO.File]::ReadAllText($main)
 $c = $c.Replace('options.builtin_game_name = "Mario & Luigi: Superstar Saga";','options.builtin_game_name = "RAG Edition: Superstar Saga";')
 $oldSave = 'options.launcher_save_path = "saves/mlss_usa.sav";'
@@ -106,6 +113,9 @@ if (-not $c.Contains('options.builtin_game_name = "RAG Edition: Superstar Saga";
 }
 Write-Utf8NoBom -Path $main -Text $c
 
+Replace-ExpectedText -Path $main -OldText '#include "launcher_seam.h"' -NewText '#include "launcher_seam.h"
+#include "rag_save_backup.hpp"' -Description "include RAG save-backup helper"
+
 $backupOld = @'
     if (game_validate_inputs(args, options)) return 1;
     if (player_launch) {
@@ -114,54 +124,28 @@ $backupOld = @'
 $backupNew = @'
     if (game_validate_inputs(args, options)) return 1;
 
-    // RAG save safety: preserve the last session's cartridge save before
-    // starting a new interactive session. Keep two generations outside the
-    // game runtime so an interrupted write can be recovered manually.
+    // RAG save safety: keep two recovery generations before an interactive
+    // session. The helper preserves the live save and never blocks gameplay.
     if (player_launch && options.launcher_save_path &&
         options.launcher_save_path[0]) {
         std::filesystem::path save_path(options.launcher_save_path);
         if (save_path.is_relative())
             save_path = std::filesystem::current_path() / save_path;
-        std::error_code save_error;
-        if (!save_path.parent_path().empty())
-            std::filesystem::create_directories(save_path.parent_path(), save_error);
-        if (save_error) {
-            std::fprintf(stderr, "[RAG] Save backup warning: %s\n",
-                         save_error.message().c_str());
-        } else if (std::filesystem::is_regular_file(save_path, save_error) &&
-                   !save_error) {
-            std::filesystem::path backup = save_path;
-            backup += ".bak";
-            std::filesystem::path previous_backup = save_path;
-            previous_backup += ".bak.1";
-            save_error.clear();
-            if (std::filesystem::exists(backup, save_error) && !save_error) {
-                std::filesystem::copy_file(
-                    backup, previous_backup,
-                    std::filesystem::copy_options::overwrite_existing,
-                    save_error);
-            }
-            if (!save_error) {
-                std::filesystem::copy_file(
-                    save_path, backup,
-                    std::filesystem::copy_options::overwrite_existing,
-                    save_error);
-            }
-            if (save_error) {
-                std::fprintf(stderr, "[RAG] Save backup warning: %s\n",
-                             save_error.message().c_str());
-            } else {
-                std::fprintf(stderr, "[RAG] Save backup written to %s\n",
-                             backup.string().c_str());
-            }
+        const auto backup_result = rag::rotate_save_backups(save_path);
+        if (!backup_result.ok) {
+            std::fprintf(stderr, "[RAG] Save backup warning: %s\\n",
+                         backup_result.error.c_str());
+        } else if (backup_result.save_found) {
+            std::fprintf(stderr, "[RAG] Save backup written to %s\\n",
+                         backup_result.backup_path.string().c_str());
         }
     }
 
     if (player_launch) {
         args.emplace_back("--save");
 '@
-Replace-ExpectedText -Path $main -OldText $backupOld -NewText $backupNew -Description "two-generation automatic cartridge-save backup"
-
+Replace-ExpectedText -Path $main -OldText $backupOld -NewText $backupNew -Description "call tested two-generation cartridge-save backup"
+    
 $c = [System.IO.File]::ReadAllText($config)
 $c = $c.Replace('window_title = "MarioLuigiSuperstarSagaRecomp"','window_title = "RAG Edition: Superstar Saga"')
 $c = $c.Replace('path = "saves/mlss_usa.sav"', 'path = "saves/rag_mlss_usa.sav"')
