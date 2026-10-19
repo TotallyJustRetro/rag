@@ -41,7 +41,7 @@ jobs:
     timeout-minutes: 240
     steps:
       - name: Check out RAG and pinned submodules
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           persist-credentials: false
@@ -60,12 +60,20 @@ jobs:
               throw "Required local file is not visible to this runner: $path"
             }
           }
-          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_TOOLCHAIN_ROOT 'bin/g++.exe'))) {
-            throw "MinGW-w64 compiler not found below $env:RAG_TOOLCHAIN_ROOT"
+          foreach ($tool in @('bin/gcc.exe','bin/g++.exe','bin/cmake.exe','bin/ninja.exe')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_TOOLCHAIN_ROOT $tool))) {
+              throw "Required MinGW build tool not found: $(Join-Path $env:RAG_TOOLCHAIN_ROOT $tool)"
+            }
           }
           if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_SDL_ROOT 'include/SDL2/SDL.h'))) {
             throw "SDL2 development headers not found below $env:RAG_SDL_ROOT"
           }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_SDL_ROOT 'lib/libSDL2.dll.a'))) {
+            throw "SDL2 MinGW import library not found below $env:RAG_SDL_ROOT"
+          }
+          # build-host.ps1 invokes cmake and Ninja by name; make the selected
+          # toolchain explicit for every step in this runner job.
+          (Join-Path $env:RAG_TOOLCHAIN_ROOT 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           Write-Host 'ROM and BIOS are local runner inputs; neither is uploaded to GitHub.'
 
       - name: Generate and compile the RAG Edition executable
