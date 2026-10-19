@@ -113,7 +113,10 @@ jobs:
             'launcher_expose_affine_filter = true',
             'launcher_default_affine_filter = false',
             'expose_assist_tools = true',
-            'rewind_history_seconds = 5'
+            'rewind_history_seconds = 5',
+            'RAG save safety',
+            '.bak.1',
+            'Save backup written'
           )) {
             if (-not $main.Contains($marker)) { throw "RAG source overlay missing marker: $marker" }
           }
