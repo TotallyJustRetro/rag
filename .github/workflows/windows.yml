@@ -112,13 +112,14 @@ jobs:
           if (-not $config.Contains('path = "saves/rag_mlss_usa.sav"')) { throw 'RAG save path not isolated.' }
           if (-not $cmake.Contains('OUTPUT_NAME "RAGSuperstarSaga"')) { throw 'RAG executable output name not applied.' }
           if (-not $buildScript.Contains('RAGSuperstarSaga.exe')) { throw 'Build script does not check the RAG executable name.' }
-          foreach ($pair in @(
-            @{ Text = 'options.builtin_game_name = "RAG Edition: Superstar Saga";'; Count = 1 },
-            @{ Text = 'options.launcher_save_path = "saves/rag_mlss_usa.sav";'; Count = 1 },
-            @{ Text = 'set_target_properties(MarioLuigiSuperstarSagaRecomp PROPERTIES OUTPUT_NAME "RAGSuperstarSaga")'; Count = 1 },
-            @{ Text = 'path = "saves/rag_mlss_usa.sav"'; Count = 1 }
-          )) {
-            $matches = [regex]::Matches($main + $cmake + $config, [regex]::Escape($pair.Text)).Count
-            if ($matches -ne $pair.Count) { throw "Overlay idempotency failed for marker '$($pair.Text)' (found $matches)." }
+          $uniqueMarkers = @(
+            @{ Source = $main; Text = 'options.builtin_game_name = "RAG Edition: Superstar Saga";'; Label = 'launcher identity' },
+            @{ Source = $main; Text = 'options.launcher_save_path = "saves/rag_mlss_usa.sav";'; Label = 'launcher save path' },
+            @{ Source = $cmake; Text = 'set_target_properties(MarioLuigiSuperstarSagaRecomp PROPERTIES OUTPUT_NAME "RAGSuperstarSaga")'; Label = 'executable output name' },
+            @{ Source = $config; Text = 'path = "saves/rag_mlss_usa.sav"'; Label = 'TOML save path' }
+          )
+          foreach ($marker in $uniqueMarkers) {
+            $count = [regex]::Matches($marker.Source, [regex]::Escape($marker.Text)).Count
+            if ($count -ne 1) { throw "Overlay idempotency failed for $($marker.Label) (expected one marker, found $count)." }
           }
           Write-Host 'PASS: RAG Edition source overlay, isolated save, target name, and re-application contract.'
