@@ -26,13 +26,13 @@ function Replace-ExpectedText {
     $content = $content.Replace($crlf, $lf)
     $normalizedOld = $OldText.Replace($crlf, $lf)
     $normalizedNew = $NewText.Replace($crlf, $lf)
+    $newCount = [regex]::Matches($content, [regex]::Escape($normalizedNew)).Count
+    if ($newCount -eq $ExpectedCount) {
+        Write-Host "Already applied: $Description"
+        return
+    }
     $oldCount = [regex]::Matches($content, [regex]::Escape($normalizedOld)).Count
     if ($oldCount -eq 0) {
-        $newCount = [regex]::Matches($content, [regex]::Escape($normalizedNew)).Count
-        if ($newCount -eq $ExpectedCount) {
-            Write-Host "Already applied: $Description"
-            return
-        }
         throw "Expected source anchor for '$Description' not found in $Path."
     }
     if ($oldCount -ne $ExpectedCount) {
@@ -113,7 +113,7 @@ if (-not $c.Contains('options.builtin_game_name = "RAG Edition: Superstar Saga";
 }
 Write-Utf8NoBom -Path $main -Text $c
 
-Replace-ExpectedText -Path $main -OldText '#include "launcher_seam.h"' -NewText '#include "launcher_seam.h"
+Replace-ExpectedText -Path $main -OldText '#include "runtime.h"' -NewText '#include "runtime.h"
 #include "rag_save_backup.hpp"' -Description "include RAG save-backup helper"
 
 $backupOld = @'
