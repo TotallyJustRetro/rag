@@ -108,6 +108,10 @@ jobs:
             'saves/rag_mlss_usa.sav',
             'show_fps_by_default = true',
             'freely_resizable_window = true',
+            'launcher_expose_sharp_filter = true',
+            'launcher_default_sharp_filter = false',
+            'launcher_expose_affine_filter = true',
+            'launcher_default_affine_filter = false',
             'expose_assist_tools = true',
             'rewind_history_seconds = 5'
           )) {
