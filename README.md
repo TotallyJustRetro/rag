@@ -73,6 +73,17 @@ On success, the RAG Edition executable should be at `reference/mlss/build/host/R
 
 Read [the integration's full README](https://github.com/Zaxaerith/MarioLuigiSuperstarSagaRecomp/blob/5c742186b131b88e48a4ba9b033ce0a480f23ccd/README.md) for detailed setup notes and known limitations. This baseline is an experimental preview: opening gameplay and the Bowser tutorial are reported as tested, but a complete campaign playthrough is not claimed.
  
+## Private GitHub-hosted build (recommended if you do not want a local runner)
+
+A companion **private** repository can hold your own ROM/BIOS and run the native build on GitHub-hosted Windows. This keeps input files, build logs, and the downloadable executable artifact out of the public RAG repository. The workflow template and one-time setup guide are in [private-build-template](private-build-template/README.md).
+
+1. Create a separate repository (for example, **rag-private-build**) and set its visibility to **Private**. Keep access restricted.
+2. Add your own files at **assets/Mario & Luigi - Superstar Saga (USA).gba** and **assets/gba_bios.bin**.
+3. Copy [private-build-template/build-rag.yml](private-build-template/build-rag.yml) to that private repository at **.github/workflows/build-rag.yml**.
+4. Run **Actions → RAG Edition Private Windows Build → Run workflow**. The workflow checks the inputs, builds the EXE, runs a headless smoke test, and uploads a 7-day package artifact to that private repository.
+
+The private workflow uploads only the runnable package, not the ROM/BIOS or generated C++ sources. **Do not copy these inputs into the public RAG repository or its Actions artifacts.** The final artifact is visible to people who have read access to the private repository, so check its access list.
+
 ## One-click GitHub Actions build (Windows runner)
 
 The `RAG Edition Native Windows Build` workflow is **manual-only** and runs on a self-hosted Windows x64 runner. This is intentional: the repository is public, so any published Actions artifact can be downloaded by anyone with repository read access. The workflow does not upload the game executable, the ROM, the BIOS, or ROM-generated source. The final EXE stays on your Windows machine.
