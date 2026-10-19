@@ -7,6 +7,38 @@ function Write-Utf8NoBom {
     [System.IO.File]::WriteAllText($Path, $Text, [System.Text.UTF8Encoding]::new($false))
 }
 
+function Replace-ExpectedText {
+    param(
+        [string]$Path,
+        [string]$OldText,
+        [string]$NewText,
+        [string]$Description,
+        [int]$ExpectedCount = 1
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "RAG overlay target missing for '$Description': $Path"
+    }
+
+    $content = [System.IO.File]::ReadAllText($Path) -replace "\r\n", "\n"
+    $oldCount = [regex]::Matches($content, [regex]::Escape($OldText)).Count
+    if ($oldCount -eq 0) {
+        $newCount = [regex]::Matches($content, [regex]::Escape($NewText)).Count
+        if ($newCount -eq $ExpectedCount) {
+            Write-Host "Already applied: $Description"
+            return
+        }
+        throw "Expected source anchor for '$Description' not found in $Path."
+    }
+    if ($oldCount -ne $ExpectedCount) {
+        throw "Expected $ExpectedCount source anchor(s) for '$Description' in $Path, found $oldCount."
+    }
+
+    $content = $content.Replace($OldText, $NewText)
+    Write-Utf8NoBom -Path $Path -Text $content
+    Write-Host "Applied: $Description"
+}
+
 $main = Join-Path $IntegrationPath "src/main.cpp"
 $config = Join-Path $IntegrationPath "game.toml"
 $cmake = Join-Path $IntegrationPath "CMakeLists.txt"
