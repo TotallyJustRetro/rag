@@ -22,19 +22,24 @@ Keep your legally obtained ROM and retail GBA BIOS on your own computer. Do not 
 
 ## Build the game integration (Windows)
 
-Prerequisites include Windows 10/11 x64, Git, Visual Studio 2022, MSYS2 MinGW-w64, CMake, Ninja, and SDL2 development libraries. Then from the RAG root:
+Prerequisites include Windows 10/11 x64, Git, PowerShell, Visual Studio 2022, MSYS2 MinGW-w64 with GCC/G++, CMake, Ninja, and SDL2 development libraries.
 
-~~~powershell
-cd reference/mlss
-./tools/setup-deps.ps1
-./tools/regen.ps1 -Rom "D:/ROMs/Mario & Luigi - Superstar Saga (USA).gba" -Bios "D:/BIOS/gba_bios.bin"
-./tools/build-host.ps1 -Jobs 4 -Toolchain "C:/msys64/mingw64" -SdlRoot "D:/path/to/SDL2/x86_64-w64-mingw32"
-~~~
+1. Clone this repository with submodules:
+   ~~~powershell
+   git clone --recurse-submodules https://github.com/TotallyJustRetro/rag.git
+   cd rag
+   ~~~
+2. Run the root build wrapper, providing your legally obtained ROM and retail BIOS, plus the SDL2 MinGW development folder:
+   ~~~powershell
+   .\tools\build-mlss.ps1 -Rom "D:/ROMs/Mario & Luigi - Superstar Saga (USA).gba" -Bios "D:/BIOS/gba_bios.bin" -SdlRoot "D:/path/to/SDL2/x86_64-w64-mingw32" -Toolchain "C:/msys64/mingw64" -Jobs 4
+   ~~~
 
-Adjust the ROM, BIOS, and SDL2 paths to your machine. If the build succeeds, the current baseline's game executable is created under reference/mlss/build/host/. The generated C++ and build output remain local and should not be committed.
+The wrapper checks the USA Rev 0 ROM and retail BIOS hashes, verifies the pinned integration revision, initializes framework dependencies, builds the recompiler, generates local C++, then compiles the native executable. It places a verified copy of the ROM in the integration's ignored local folder because the pinned upstream generation script expects the ROM next to `game.toml`. The ROM, BIOS, generated C++, logs and binaries are excluded from version control. They are not uploaded by this workflow.
 
-Read [the integration's full README](https://github.com/Zaxaerith/MarioLuigiSuperstarSagaRecomp/blob/5c742186b131b88e48a4ba9b033ce0a480f23ccd/README.md) and [Windows build guide](https://github.com/mstan/gbarecomp/blob/main/docs/WINDOWS_GAME_SETUP.md) for details and limitations.
+On success, the executable should be at `reference/mlss/build/host/MarioLuigiSuperstarSagaRecomp.exe`. To run it after building, the wrapper prints the launch command. Add `-RunAfterBuild` to launch it automatically.
 
+Read [the integration's full README](https://github.com/Zaxaerith/MarioLuigiSuperstarSagaRecomp/blob/5c742186b131b88e48a4ba9b033ce0a480f23ccd/README.md) for detailed setup notes and known limitations. This baseline is an experimental preview: opening gameplay and the Bowser tutorial are reported as tested, but a complete campaign playthrough is not claimed.
+ 
 ## RAG's own diagnostic utility
 
 The repository root also keeps a small C++ ROM/entry-point inspection tool. It is a developer diagnostic, not a substitute for the full game integration and not a playable recompiler.
