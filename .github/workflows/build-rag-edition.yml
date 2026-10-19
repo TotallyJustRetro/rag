@@ -122,7 +122,11 @@ jobs:
           }
           $assets = Join-Path $buildDir 'assets'
           if (Test-Path -LiteralPath $assets -PathType Container) {
-            Copy-Item -LiteralPath $assets -Destination $output -Recurse
+            $destAssets = Join-Path $output 'assets'
+            New-Item -ItemType Directory -Force -Path $destAssets | Out-Null
+            Get-ChildItem -LiteralPath $assets -Force | ForEach-Object {
+              Copy-Item -LiteralPath $_.FullName -Destination $destAssets -Recurse -Force
+            }
           } else {
             throw "Launcher assets are missing from the build output: $assets"
           }
