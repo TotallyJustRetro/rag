@@ -6,8 +6,20 @@ CMakeUserPresets.json
 *.user
 *.suo
 *.gba
+*.rom
+*.bin
+*.BIOS
 *.gbc
 *.gb
 *.sav
 *.srm
 *.bios
+
+# Local native-recompilation outputs inside the pinned integration
+reference/mlss/build/
+reference/mlss/build-*/
+reference/mlss/generated/
+reference/mlss/recomp_cache/
+reference/mlss/.deps/
+reference/mlss/logs/
+reference/mlss/release-stage/
