@@ -24,24 +24,14 @@ function Replace-ExpectedText {
     $crlf = ([char]13).ToString() + ([char]10).ToString()
     $lf = ([char]10).ToString()
     $content = $content.Replace($crlf, $lf)
-    $oldCount = [regex]::Matches($content, [regex]::Escape($OldText)).Count
+    $normalizedOld = $OldText.Replace($crlf, $lf)
+    $normalizedNew = $NewText.Replace($crlf, $lf)
+    $oldCount = [regex]::Matches($content, [regex]::Escape($normalizedOld)).Count
     if ($oldCount -eq 0) {
-        $newCount = [regex]::Matches($content, [regex]::Escape($NewText)).Count
+        $newCount = [regex]::Matches($content, [regex]::Escape($normalizedNew)).Count
         if ($newCount -eq $ExpectedCount) {
             Write-Host "Already applied: $Description"
             return
-        }
-        # Multiline replacement strings can be normalized by editors/checkout
-        # tooling; use their final non-empty line as an idempotency sentinel too.
-        $sentinelLines = @($NewText -split "`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-        $sentinel = ""
-        if ($sentinelLines.Count -gt 0) { $sentinel = $sentinelLines[-1].Trim() }
-        if (-not [string]::IsNullOrWhiteSpace($sentinel)) {
-            $sentinelCount = [regex]::Matches($content, [regex]::Escape($sentinel)).Count
-            if ($sentinelCount -ge $ExpectedCount) {
-                Write-Host "Already applied: $Description"
-                return
-            }
         }
         throw "Expected source anchor for '$Description' not found in $Path."
     }
@@ -49,7 +39,7 @@ function Replace-ExpectedText {
         throw "Expected $ExpectedCount source anchor(s) for '$Description' in $Path, found $oldCount."
     }
 
-    $content = $content.Replace($OldText, $NewText)
+    $content = $content.Replace($normalizedOld, $normalizedNew)
     Write-Utf8NoBom -Path $Path -Text $content
     Write-Host "Applied: $Description"
 }
