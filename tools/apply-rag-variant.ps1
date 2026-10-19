@@ -77,6 +77,10 @@ if ($c.Contains($oldSave)) {
     options.launcher_save_path = "saves/rag_mlss_usa.sav";
     options.show_fps_by_default = true;
     options.freely_resizable_window = true;
+    options.launcher_expose_sharp_filter = true;
+    options.launcher_default_sharp_filter = false;
+    options.launcher_expose_affine_filter = true;
+    options.launcher_default_affine_filter = false;
     options.expose_assist_tools = true;
     options.assist_tools_enabled_by_default = true;
     options.assist_fast_forward_multiplier_default = 4;
@@ -87,6 +91,26 @@ if ($c.Contains($oldSave)) {
 } elseif (-not $c.Contains($newSave)) {
     throw "Could not find the expected save-path anchor in src/main.cpp."
 }
+
+# Keep later overlay additions applied even when this submodule was already
+# modified by an earlier RAG build.
+$displayOptions = @(
+    'options.launcher_expose_sharp_filter = true;',
+    'options.launcher_default_sharp_filter = false;',
+    'options.launcher_expose_affine_filter = true;',
+    'options.launcher_default_affine_filter = false;'
+)
+$displayAnchor = 'options.freely_resizable_window = true;'
+foreach ($option in $displayOptions) {
+    if (-not $c.Contains($option)) {
+        if (-not $c.Contains($displayAnchor)) {
+            throw "Could not add RAG display option '$option' to src/main.cpp."
+        }
+        $c = $c.Replace($displayAnchor, $displayAnchor + [Environment]::NewLine + "    " + $option)
+    }
+    $displayAnchor = $option
+}
+
 if (-not $c.Contains('options.builtin_game_name = "RAG Edition: Superstar Saga";')) {
     throw "Could not apply the RAG Edition launcher identity."
 }
