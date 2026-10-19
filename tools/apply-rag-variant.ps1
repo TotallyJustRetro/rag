@@ -1,5 +1,11 @@
 param([string]$IntegrationPath = (Join-Path (Split-Path -Parent $PSScriptRoot) "reference/mlss"))
 $ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+function Write-Utf8NoBom {
+    param([string]$Path, [string]$Text)
+    [System.IO.File]::WriteAllText($Path, $Text, [System.Text.UTF8Encoding]::new($false))
+}
 
 $main = Join-Path $IntegrationPath "src/main.cpp"
 $config = Join-Path $IntegrationPath "game.toml"
@@ -9,10 +15,15 @@ foreach ($p in @($main,$config,$cmake,$build)) {
     if (-not (Test-Path -LiteralPath $p -PathType Leaf)) { throw "Missing RAG patch target: $p" }
 }
 
-$c = Get-Content -LiteralPath $main -Raw
+$c = [System.IO.File]::ReadAllText($main)
 $c = $c.Replace('options.builtin_game_name = "Mario & Luigi: Superstar Saga";','options.builtin_game_name = "RAG Edition: Superstar Saga";')
-$c = $c.Replace('options.launcher_save_path = "saves/mlss_usa.sav";', @'
-options.launcher_config_filename = "rag-config.ini";
+$oldSave = 'options.launcher_save_path = "saves/mlss_usa.sav";'
+$newSave = 'options.launcher_save_path = "saves/rag_mlss_usa.sav";'
+if ($c.Contains($oldSave)) {
+    $newOptions = @'
+    // RAG Edition quality-of-life defaults. Keep sidecar files distinct from
+    // the upstream preview so both builds can coexist without sharing settings.
+    options.launcher_config_filename = "rag-config.ini";
     options.launcher_keybinds_filename = "rag-keybinds.ini";
     options.launcher_rom_cache_filename = "rag-rom.cfg";
     options.launcher_bios_cache_filename = "rag-bios.cfg";
@@ -23,19 +34,31 @@ options.launcher_config_filename = "rag-config.ini";
     options.assist_fast_forward_multiplier_default = 4;
     options.save_state_slot_count = 9;
     options.rewind_history_seconds = 5;
-'@)
-Set-Content -LiteralPath $main -Value $c -Encoding utf8NoBOM
+'@
+    $c = $c.Replace($oldSave, $newOptions)
+} elseif (-not $c.Contains($newSave)) {
+    throw "Could not find the expected save-path anchor in src/main.cpp."
+}
+if (-not $c.Contains('options.builtin_game_name = "RAG Edition: Superstar Saga";')) {
+    throw "Could not apply the RAG Edition launcher identity."
+}
+Write-Utf8NoBom -Path $main -Text $c
 
-$c = Get-Content -LiteralPath $config -Raw
+$c = [System.IO.File]::ReadAllText($config)
 $c = $c.Replace('window_title = "MarioLuigiSuperstarSagaRecomp"','window_title = "RAG Edition: Superstar Saga"')
-Set-Content -LiteralPath $config -Value $c -Encoding utf8NoBOM
+Write-Utf8NoBom -Path $config -Text $c
 
-$c = Get-Content -LiteralPath $cmake -Raw
-$c = $c.Replace('    target_link_gbarecomp_runtime_stack(MarioLuigiSuperstarSagaRecomp)', '    set_target_properties(MarioLuigiSuperstarSagaRecomp PROPERTIES OUTPUT_NAME "RAGSuperstarSaga")' + [Environment]::NewLine + '    target_link_gbarecomp_runtime_stack(MarioLuigiSuperstarSagaRecomp)')
-Set-Content -LiteralPath $cmake -Value $c -Encoding utf8NoBOM
+$c = [System.IO.File]::ReadAllText($cmake)
+if (-not $c.Contains('OUTPUT_NAME "RAGSuperstarSaga"')) {
+    $anchor = '    target_link_gbarecomp_runtime_stack(MarioLuigiSuperstarSagaRecomp)'
+    if (-not $c.Contains($anchor)) { throw "Could not find the executable target link anchor in CMakeLists.txt." }
+    $c = $c.Replace($anchor, '    set_target_properties(MarioLuigiSuperstarSagaRecomp PROPERTIES OUTPUT_NAME "RAGSuperstarSaga")' + [Environment]::NewLine + $anchor)
+}
+Write-Utf8NoBom -Path $cmake -Text $c
 
-$c = Get-Content -LiteralPath $build -Raw
+$c = [System.IO.File]::ReadAllText($build)
 $c = $c.Replace('MarioLuigiSuperstarSagaRecomp.exe','RAGSuperstarSaga.exe')
-Set-Content -LiteralPath $build -Value $c -Encoding utf8NoBOM
+if (-not $c.Contains('RAGSuperstarSaga.exe')) { throw "Could not set the expected RAG executable output in tools/build-host.ps1." }
+Write-Utf8NoBom -Path $build -Text $c
 
-Write-Host "RAG Edition overlay applied: branding, isolated settings/saves, FPS default and optional assist tools."
+Write-Host "RAG Edition overlay applied: custom identity, isolated settings/saves, FPS default and optional assist tools."
