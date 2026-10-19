@@ -29,6 +29,7 @@ if ($c.Contains($oldSave)) {
     options.launcher_bios_cache_filename = "rag-bios.cfg";
     options.launcher_save_path = "saves/rag_mlss_usa.sav";
     options.show_fps_by_default = true;
+    options.freely_resizable_window = true;
     options.expose_assist_tools = true;
     options.assist_tools_enabled_by_default = true;
     options.assist_fast_forward_multiplier_default = 4;
