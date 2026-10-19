@@ -131,19 +131,23 @@ jobs:
             throw "Launcher assets are missing from the build output: $assets"
           }
           Copy-Item -LiteralPath (Join-Path $integration 'game.toml') -Destination $output
-          foreach ($notice in @('LICENSE','THIRD_PARTY_NOTICES.md','README.md')) {
+          foreach ($notice in @('LICENSE','THIRD_PARTY_NOTICES.md')) {
             $source = Join-Path $integration $notice
             if (Test-Path -LiteralPath $source -PathType Leaf) {
               Copy-Item -LiteralPath $source -Destination $output
             }
           }
+          Copy-Item -LiteralPath (Join-Path $PWD 'README.md') -Destination (Join-Path $output 'README.md')
+          Copy-Item -LiteralPath (Join-Path $integration 'README.md') -Destination (Join-Path $output 'UPSTREAM-README.md')
           New-Item -ItemType Directory -Force -Path (Join-Path $output 'saves') | Out-Null
           @(
             'RAG Edition — Mario & Luigi: Superstar Saga (USA A88E Rev 0)',
             '',
             'This is a local, portable build. It does not include a game ROM or GBA BIOS.',
             'Start RAGSuperstarSaga.exe and select your own ROM and retail BIOS in the launcher.',
-            'Progress saves are stored in the saves folder; settings and keybindings use rag-config.ini and rag-keybinds.ini.',
+            'Aspect-correct resizeable window, optional sharp/affine display filters, FPS readout, rewind, fast-forward, and save-state tools are enabled.',
+            'Progress saves are stored in the saves folder. Before interactive sessions, RAG rotates saves/rag_mlss_usa.sav.bak and .bak.1.',
+            'Settings/keybindings/cache paths are isolated as rag-config.ini, rag-keybinds.ini, rag-rom.cfg, and rag-bios.cfg.',
             'The executable and generated source are not uploaded by the workflow.'
           ) | Set-Content -LiteralPath (Join-Path $output 'RAG-README.txt') -Encoding utf8
           Write-Host "Portable local build staged at: $output"
