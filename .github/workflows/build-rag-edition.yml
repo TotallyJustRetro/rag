@@ -28,6 +28,11 @@ on:
         required: true
         default: 4
         type: number
+      output_dir:
+        description: Local folder for the runnable RAG Edition package; keep it outside the Git checkout
+        required: true
+        default: 'C:/RAG-private/RAG-Edition'
+        type: string
 
 permissions:
   contents: read
@@ -89,25 +94,83 @@ jobs:
           & '.\\tools\\build-mlss.ps1' -Rom $env:RAG_ROM_PATH -Bios $env:RAG_BIOS_PATH -Toolchain $env:RAG_TOOLCHAIN_ROOT -SdlRoot $env:RAG_SDL_ROOT -Jobs ([int]$env:RAG_JOBS)
           if ($LASTEXITCODE -ne 0) { throw "RAG Edition build wrapper failed with exit code $LASTEXITCODE." }
 
-      - name: Smoke-test the executable
+      - name: Stage a portable local RAG Edition folder
+        shell: pwsh
+        env:
+          RAG_OUTPUT_DIR: ${{ inputs.output_dir }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $integration = Join-Path $PWD 'reference/mlss'
+          $buildDir = Join-Path $integration 'build/host'
+          $output = [System.IO.Path]::GetFullPath($env:RAG_OUTPUT_DIR)
+          $workspace = [System.IO.Path]::GetFullPath($PWD.Path)
+          if ($output.StartsWith($workspace, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Choose an output folder outside the Git checkout so it survives future clean builds.'
+          }
+          $exe = Join-Path $buildDir 'RAGSuperstarSaga.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+            throw "Expected RAG executable was not produced: $exe"
+          }
+          if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output -Recurse -Force }
+          New-Item -ItemType Directory -Force -Path $output | Out-Null
+          Copy-Item -LiteralPath $exe -Destination $output
+          foreach ($binary in @('SDL2.dll','libgcc_s_seh-1.dll','libstdc++-6.dll','libwinpthread-1.dll')) {
+            $source = Join-Path $buildDir $binary
+            if (Test-Path -LiteralPath $source -PathType Leaf) {
+              Copy-Item -LiteralPath $source -Destination $output
+            }
+          }
+          $assets = Join-Path $buildDir 'assets'
+          if (Test-Path -LiteralPath $assets -PathType Container) {
+            Copy-Item -LiteralPath $assets -Destination $output -Recurse
+          } else {
+            throw "Launcher assets are missing from the build output: $assets"
+          }
+          Copy-Item -LiteralPath (Join-Path $integration 'game.toml') -Destination $output
+          foreach ($notice in @('LICENSE','THIRD_PARTY_NOTICES.md','README.md')) {
+            $source = Join-Path $integration $notice
+            if (Test-Path -LiteralPath $source -PathType Leaf) {
+              Copy-Item -LiteralPath $source -Destination $output
+            }
+          }
+          New-Item -ItemType Directory -Force -Path (Join-Path $output 'saves') | Out-Null
+          @(
+            'RAG Edition — Mario & Luigi: Superstar Saga (USA A88E Rev 0)',
+            '',
+            'This is a local, portable build. It does not include a game ROM or GBA BIOS.',
+            'Start RAGSuperstarSaga.exe and select your own ROM and retail BIOS in the launcher.',
+            'Progress saves are stored in the saves folder; settings and keybindings use rag-config.ini and rag-keybinds.ini.',
+            'The executable and generated source are not uploaded by the workflow.'
+          ) | Set-Content -LiteralPath (Join-Path $output 'RAG-README.txt') -Encoding utf8
+          Write-Host "Portable local build staged at: $output"
+
+      - name: Smoke-test the staged executable
         shell: pwsh
         env:
           RAG_ROM_PATH: ${{ inputs.rom_path }}
           RAG_BIOS_PATH: ${{ inputs.bios_path }}
+          RAG_OUTPUT_DIR: ${{ inputs.output_dir }}
         run: |
           $ErrorActionPreference = 'Stop'
           $integration = Join-Path $PWD 'reference/mlss'
           $localRom = Join-Path $integration 'Mario Luigi - Superstar Saga (USA).gba'
-          $exe = Join-Path $integration 'build/host/RAGSuperstarSaga.exe'
+          $exe = Join-Path $env:RAG_OUTPUT_DIR 'RAGSuperstarSaga.exe'
           if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
-            throw "Expected RAG executable was not produced: $exe"
+            throw "Expected staged RAG executable was not produced: $exe"
           }
-          Push-Location $integration
+          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_OUTPUT_DIR 'assets') -PathType Container)) {
+            throw 'Staged launcher assets are missing.'
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_OUTPUT_DIR 'game.toml') -PathType Leaf)) {
+            throw 'Staged game.toml is missing.'
+          }
+          New-Item -ItemType Directory -Force -Path (Join-Path $env:RAG_OUTPUT_DIR 'saves') | Out-Null
+          Push-Location $env:RAG_OUTPUT_DIR
           try {
             & $exe --rom $localRom --bios $env:RAG_BIOS_PATH --save 'saves/rag_mlss_usa.sav' --frames 600 --no-window
             if ($LASTEXITCODE -ne 0) { throw "Headless smoke test failed with exit code $LASTEXITCODE." }
           } finally {
             Pop-Location
           }
-          Write-Host "PASS: native executable built and completed a 600-frame headless smoke test."
-          Write-Host "Executable is on this runner at: $exe"
+          Write-Host 'PASS: staged native executable completed the 600-frame headless smoke test.'
+          Write-Host "Portable local folder: $env:RAG_OUTPUT_DIR"
