@@ -64,7 +64,7 @@ function Invoke-Checked {
         [Parameter(Mandatory = $true)][scriptblock]$Action
     )
 
-    Write-Host "\`n==> $Description" -ForegroundColor Cyan
+    Write-Host "`n==> $Description" -ForegroundColor Cyan
     & $Action
     if ($LASTEXITCODE -ne 0) {
         throw "$Description failed with exit code $LASTEXITCODE."
@@ -167,8 +167,8 @@ try {
         throw "Build command completed but executable was not found at $Executable."
     }
 
-    Write-Host "\`nBUILD SUCCEEDED: $Executable" -ForegroundColor Green
-    Write-Host "Run command: \`"$Executable\`" --rom \`"$romInIntegration\`" --bios \`"$Bios\`""
+    Write-Host "`nBUILD SUCCEEDED: $Executable" -ForegroundColor Green
+    Write-Host "Run command: `"$Executable`" --rom `"$romInIntegration`" --bios `"$Bios`""
     if ($RunAfterBuild) {
         & $Executable --rom $romInIntegration --bios $Bios
         if ($LASTEXITCODE -ne 0) {
