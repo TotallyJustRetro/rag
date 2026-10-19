@@ -20,7 +20,10 @@ function Replace-ExpectedText {
         throw "RAG overlay target missing for '$Description': $Path"
     }
 
-    $content = [System.IO.File]::ReadAllText($Path) -replace "\r\n", "\n"
+    $content = [System.IO.File]::ReadAllText($Path)
+    $crlf = ([char]13).ToString() + ([char]10).ToString()
+    $lf = ([char]10).ToString()
+    $content = $content.Replace($crlf, $lf)
     $oldCount = [regex]::Matches($content, [regex]::Escape($OldText)).Count
     if ($oldCount -eq 0) {
         $newCount = [regex]::Matches($content, [regex]::Escape($NewText)).Count
