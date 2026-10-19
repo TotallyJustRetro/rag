@@ -45,3 +45,37 @@ jobs:
             build/Release/rag_tests.exe
           if-no-files-found: error
           retention-days: 14
+
+  integration-contract:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository and pinned submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Verify the pinned Superstar Saga integration
+        shell: pwsh
+        run: |
+          $integration = Join-Path $PWD 'reference/mlss'
+          if (-not (Test-Path (Join-Path $integration 'game.toml'))) {
+            throw 'Pinned integration game.toml is missing.'
+          }
+          if (-not (Test-Path (Join-Path $integration 'LICENSE'))) {
+            throw 'Pinned integration license is missing.'
+          }
+          $head = (git -C $integration rev-parse HEAD).Trim()
+          if ($head -ne '5c742186b131b88e48a4ba9b033ce0a480f23ccd') {
+            throw "Unexpected integration revision: $head"
+          }
+          $config = Get-Content (Join-Path $integration 'game.toml') -Raw
+          foreach ($required in @('Mario & Luigi: Superstar Saga', 'id = "A88E"', 'size = 0x01000000', '7c303cdde5061ee329296948060b875cb50ba410', 'type = "eeprom"', 'size = 8192')) {
+            if (-not $config.Contains($required)) {
+              throw "Integration configuration is missing expected marker: $required"
+            }
+          }
+          foreach ($requiredPath in @('gbarecomp/CMakeLists.txt', 'recomp-ui/recomp_ui.cmake', 'tools/regen.ps1', 'tools/build-host.ps1')) {
+            if (-not (Test-Path (Join-Path $integration $requiredPath))) {
+              throw "Missing integration/dependency file: $requiredPath"
+            }
+          }
+          Write-Host 'PASS: pinned integration, engine, launcher, ROM identity and save config.'
