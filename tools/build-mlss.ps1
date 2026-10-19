@@ -123,13 +123,14 @@ if ($existingRoms.Count -eq 1) {
     Write-Host "Placed the verified ROM in the local, gitignored integration folder."
 }
 
-& (Join-Path $PSScriptRoot "apply-rag-variant.ps1") -IntegrationPath $Integration
-
 Push-Location $Integration
 try {
     Invoke-Checked -Description "Initialize pinned GBARecomp dependencies" -Action {
         & ".\tools\setup-deps.ps1"
     }
+
+    # Apply after setup-deps has initialized the pinned GBARecomp submodule.
+    & (Join-Path $RepoRoot "tools/apply-rag-variant.ps1") -IntegrationPath $Integration
 
     if ([string]::IsNullOrWhiteSpace($SdlRoot)) {
         throw "SDL2_ROOT is not set. Pass -SdlRoot 'C:/path/to/SDL2/x86_64-w64-mingw32' or set the SDL2_ROOT environment variable."
