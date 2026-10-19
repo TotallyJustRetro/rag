@@ -31,6 +31,7 @@ RAG applies a small, reviewable local overlay on top of the pinned integration b
 - **Independent user data:** `rag-config.ini`, `rag-keybinds.ini`, `rag-rom.cfg`, `rag-bios.cfg`, and `saves/rag_mlss_usa.sav` keep this build from sharing configuration or progress with the upstream preview.
 - **Performance visibility:** FPS readout is enabled by default.
 - **Resizable window:** the window may be resized freely while the renderer preserves the game image's aspect ratio with letterboxing/pillarboxing; this is not fake widescreen or a change to the game's 240×160 logical view.
+- **Selectable display filters:** opt-in launcher controls expose the sharp-scaling filter and affine-texture filtering, both off by default so the original pixel presentation remains the starting point.
 - **Quality-of-life menu:** expose the runtime assist menu with 4× fast-forward, nine save-state slots, and a five-second rewind history.
 
 These settings are the first differentiators; the executable must still be built and tested before we can claim each option works correctly in this game's scenes. **Adaptive widescreen is deliberately not enabled yet**: exposing it without a scene-aware field/camera/background policy could reveal missing edges or break battle layouts.
