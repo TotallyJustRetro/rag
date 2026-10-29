@@ -58,14 +58,31 @@ jobs:
           RAG_BIOS_PATH: ${{ inputs.bios_path }}
           RAG_TOOLCHAIN_ROOT: ${{ inputs.toolchain_root }}
           RAG_SDL_ROOT: ${{ inputs.sdl_root }}
-          RAG_OUTPUT_DIR: ${{ inputs.output_dir }}
         run: |
           $ErrorActionPreference = 'Stop'
-          & '.\tools\check-rag-build.ps1' -Rom $env:RAG_ROM_PATH -Bios $env:RAG_BIOS_PATH -Toolchain $env:RAG_TOOLCHAIN_ROOT -SdlRoot $env:RAG_SDL_ROOT -OutputDir $env:RAG_OUTPUT_DIR
+          foreach ($path in @($env:RAG_ROM_PATH, $env:RAG_BIOS_PATH)) {
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+              throw "Required local file is not visible to this runner: $path"
+            }
+          }
+          foreach ($tool in @('bin/gcc.exe','bin/g++.exe','bin/cmake.exe','bin/ninja.exe')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_TOOLCHAIN_ROOT $tool))) {
+              throw "Required MinGW build tool not found: $(Join-Path $env:RAG_TOOLCHAIN_ROOT $tool)"
+            }
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_SDL_ROOT 'include/SDL2/SDL.h'))) {
+            throw "SDL2 development headers not found below $env:RAG_SDL_ROOT"
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_SDL_ROOT 'lib/libSDL2.dll.a'))) {
+            throw "SDL2 MinGW import library not found below $env:RAG_SDL_ROOT"
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:RAG_SDL_ROOT 'bin/SDL2.dll'))) {
+            throw "SDL2 runtime DLL not found below $env:RAG_SDL_ROOT"
+          }
           # build-host.ps1 invokes cmake and Ninja by name; make the selected
           # toolchain explicit for every step in this runner job.
           (Join-Path $env:RAG_TOOLCHAIN_ROOT 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          Write-Host 'Preflight passed. ROM and BIOS remain local runner inputs; neither is uploaded to GitHub.'
+          Write-Host 'ROM and BIOS are local runner inputs; neither is uploaded to GitHub.'
 
       - name: Generate and compile the RAG Edition executable
         shell: pwsh
